@@ -1,6 +1,10 @@
 from dotenv import load_dotenv  # Import the load_dotenv function to load environment variables from a .env file
 import os # Import the os module to access environment variables
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.output_parsers import StrOutputParser
+
 
 
 load_dotenv()  # Load environment variables from a .env file
@@ -22,6 +26,13 @@ llm = ChatGoogleGenerativeAI(
 )
 
 
+prompt = ChatPromptTemplate.from_messages(
+    [("system", system_prompt),
+    (MessagesPlaceholder(variable_name="history")),
+    ("user", "{input}") ]  
+)
+
+chain = prompt | llm | StrOutputParser()
 
 
 print("Ahoj, jsem Albert Einstein. Jak ti mohu pomoci?")
@@ -32,8 +43,8 @@ while True:
     user_input = input("Ty: ")
     if user_input == "exit":
         break
-    history.append({"role": "user", "content": user_input})
     # Vytvoření konverzačního promptu s rolí systému a uživatele
-    response = llm.invoke([{"role": "system", "content": system_prompt}] + history) 
-    print(f"Albert Einstein: {response.content}")
-    history.append({"role": "assistant", "content": response.content})
+    response = chain.invoke({"input": user_input, "history": history})
+    print(f"Albert Einstein: {response}")
+    history.append(HumanMessage(content=user_input))
+    history.append(AIMessage(content=response))
